@@ -637,9 +637,20 @@ func (tv *tokenVisitor) ident(id *ast.Ident) {
 		return
 	}
 
-	if v, ok := obj.(*types.Var); ok && v.IsField() && v.Embedded() {
-		if tv.inEmbeddedStructFieldDecl() {
-			mods = append(mods, semtok.ModEmbedded)
+	if v, ok := obj.(*types.Var); ok && v.IsField() && v.Embedded() && tv.inEmbeddedStructFieldDecl() {
+		// embedded marker only at declaration site
+		mods = append(mods, semtok.ModEmbedded)
+
+		// In the declaration `*Config`, color `Config` as the base type (struct),
+		// but keep uses (db.Config) colored by the full field type (*Config).
+		base := derefPointers(v.Type())
+
+		mods = stripTypeMods(mods) // remove pointer/struct/... modifiers derived from *Config
+		mods = appendTypeModifiers(mods, base)
+
+		// builtin embedded (int/float64/...) = defaultLibrary
+		if isDefaultLibraryBaseType(base) {
+			mods = append(mods, semtok.ModDefaultLibrary)
 		}
 	}
 
@@ -654,6 +665,55 @@ func (tv *tokenVisitor) ident(id *ast.Ident) {
 		log.Printf(" use %s/%T/%s got %s %v (%s)",
 			id.Name, obj, q, tok, mods, tv.strStack())
 	}
+}
+
+func isDefaultLibraryBaseType(t types.Type) bool {
+	t = types.Unalias(t)
+
+	switch tt := t.(type) {
+	case *types.Basic:
+		return tt.Kind() != types.Invalid
+
+	case *types.Named:
+		// Universe (predeclared) named types like "error" have nil package.
+		if obj := tt.Obj(); obj != nil && obj.Pkg() == nil {
+			return true
+		}
+		return false
+
+	case *types.Alias: // если в твоём Go/types есть Alias (в 1.25 он есть)
+		if obj := tt.Obj(); obj != nil && obj.Pkg() == nil {
+			return true
+		}
+		return false
+	}
+
+	return false
+}
+
+func derefPointers(t types.Type) types.Type {
+	for {
+		u := types.Unalias(t).Underlying()
+		p, ok := u.(*types.Pointer)
+		if !ok {
+			return t
+		}
+		t = p.Elem()
+	}
+}
+
+func stripTypeMods(mods []semtok.Modifier) []semtok.Modifier {
+	out := mods[:0]
+	for _, m := range mods {
+		switch m {
+		case semtok.ModInterface, semtok.ModStruct, semtok.ModSignature,
+			semtok.ModPointer, semtok.ModArray, semtok.ModMap, semtok.ModSlice, semtok.ModChan,
+			semtok.ModString, semtok.ModBool, semtok.ModNumber:
+		default:
+			out = append(out, m)
+		}
+	}
+	return out
 }
 
 // isParam reports whether the position is that of a parameter name of
