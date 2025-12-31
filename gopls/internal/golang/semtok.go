@@ -549,7 +549,9 @@ func (tv *tokenVisitor) appendObjectModifiers(mods []semtok.Modifier, obj types.
 		return semtok.TokVariable, mods
 
 	case *types.Var:
-		if tv.isParam(obj.Pos()) {
+		if obj.IsField() {
+			return semtok.TokProperty, mods
+		} else if tv.isParam(obj.Pos()) {
 			return semtok.TokParameter, mods
 		} else {
 			return semtok.TokVariable, mods
