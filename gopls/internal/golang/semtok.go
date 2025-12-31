@@ -635,6 +635,12 @@ func (tv *tokenVisitor) ident(id *ast.Ident) {
 		return
 	}
 
+	if v, ok := obj.(*types.Var); ok && v.IsField() && v.Embedded() {
+		if tv.inEmbeddedStructFieldDecl() {
+			mods = append(mods, semtok.ModEmbedded)
+		}
+	}
+
 	// Emit a token for the identifier's extent.
 	tv.token(id.Pos(), len(id.Name), tok, mods...)
 
@@ -670,6 +676,40 @@ func (tv *tokenVisitor) isParam(pos token.Pos) bool {
 				}
 			}
 		}
+	}
+	return false
+}
+
+// inEmbeddedStructFieldDecl reports whether the current Ident is part of the
+// type expression of an embedded field in a struct type declaration:
+//
+//	type S struct { pkg.T; *U; V }
+//
+// It is intentionally AST-contextual: we want the "embedded" modifier only
+// at the field declaration site, not at uses like s.T or in composite keys.
+func (tv *tokenVisitor) inEmbeddedStructFieldDecl() bool {
+	// stack is [..., Ident]; check nearest enclosing *ast.Field
+	for i := len(tv.stack) - 2; i >= 0; i-- { // parent of Ident and above
+		f, ok := tv.stack[i].(*ast.Field)
+		if !ok {
+			continue
+		}
+
+		// Embedded field has no explicit names: `T` or `*T` or `pkg.T`
+		if f.Names != nil {
+			return false
+		}
+
+		// Ensure we're in a struct type field list (not interface methods,
+		// func params, etc.). Typical stack: StructType -> FieldList -> Field -> ...
+		if i >= 2 {
+			if fl, ok := tv.stack[i-1].(*ast.FieldList); ok {
+				if st, ok := tv.stack[i-2].(*ast.StructType); ok && st.Fields == fl {
+					return true
+				}
+			}
+		}
+		return false
 	}
 	return false
 }
