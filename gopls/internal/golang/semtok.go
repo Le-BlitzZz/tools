@@ -722,6 +722,28 @@ func stripTypeMods(mods []semtok.Modifier) []semtok.Modifier {
 	return out
 }
 
+// isRecv reports whether pos is the position of a receiver name of
+// an enclosing method declaration.
+func (tv *tokenVisitor) isRecv(pos token.Pos) bool {
+	// Walk up the stack and look for any enclosing FuncDecl with a receiver.
+	// Don't stop at the nearest function: receiver vars are in scope in nested
+	// function literals too.
+	for i := len(tv.stack) - 1; i >= 0; i-- {
+		fd, ok := tv.stack[i].(*ast.FuncDecl)
+		if !ok || fd.Recv == nil {
+			continue
+		}
+		for _, f := range fd.Recv.List {
+			for _, name := range f.Names {
+				if name != nil && name.Pos() == pos {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 // inEmbeddedStructFieldDecl reports whether the current Ident is part of the
 // type expression of an embedded field in a struct type declaration:
 //
