@@ -36,6 +36,7 @@ const (
 	TokType      Type = "type"          // for a type name (plus other uses)
 	TokTypeParam Type = "typeParameter" // for a type parameter
 	TokVariable  Type = "variable"      // for a var or const
+	TokReceiver  Type = "receiver"
 	// The section below defines a subset of token types in standard token types
 	// that gopls does not use.
 	//
@@ -69,6 +70,7 @@ var Types = []Type{
 	TokNumber,
 	TokOperator,
 	TokLabel,
+	TokReceiver,
 }
 
 type Modifier string
