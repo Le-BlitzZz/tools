@@ -116,6 +116,7 @@ const (
 	ModString    Modifier = "string"
 	ModStruct    Modifier = "struct"
 	ModEmbedded  Modifier = "embedded"
+	ModPackage   Modifier = "package"
 )
 
 // TokenModifiers is a slice of modifiers gopls will return as its server
@@ -139,6 +140,7 @@ var TokenModifiers = []Modifier{
 	ModString,
 	ModStruct,
 	ModEmbedded,
+	ModPackage,
 }
 
 // Encode returns the LSP encoding of a sequence of tokens.
