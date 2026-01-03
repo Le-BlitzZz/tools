@@ -546,6 +546,9 @@ func (tv *tokenVisitor) appendObjectModifiers(mods []semtok.Modifier, obj types.
 
 	case *types.Const:
 		mods = append(mods, semtok.ModReadonly)
+		if isPackageScope(obj) {
+			mods = append(mods, semtok.ModPackage)
+		}
 		return semtok.TokVariable, mods
 
 	case *types.Var:
@@ -555,9 +558,12 @@ func (tv *tokenVisitor) appendObjectModifiers(mods []semtok.Modifier, obj types.
 			return semtok.TokReceiver, mods
 		} else if tv.isParam(obj.Pos()) {
 			return semtok.TokParameter, mods
-		} else {
-			return semtok.TokVariable, mods
 		}
+
+		if isPackageScope(obj) {
+			mods = append(mods, semtok.ModPackage)
+		}
+		return semtok.TokVariable, mods
 
 	case *types.Label:
 		return semtok.TokLabel, mods
@@ -665,6 +671,14 @@ func (tv *tokenVisitor) ident(id *ast.Ident) {
 		log.Printf(" use %s/%T/%s got %s %v (%s)",
 			id.Name, obj, q, tok, mods, tv.strStack())
 	}
+}
+
+func isPackageScope(obj types.Object) bool {
+	pkg := obj.Pkg()
+	if pkg == nil {
+		return false
+	}
+	return obj.Parent() == pkg.Scope()
 }
 
 func isDefaultLibraryBaseType(t types.Type) bool {
