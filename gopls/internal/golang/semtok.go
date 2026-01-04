@@ -751,6 +751,17 @@ func (tv *tokenVisitor) isParam(pos token.Pos) bool {
 					}
 				}
 			}
+		case *ast.FuncType:
+			if n.Params == nil {
+				continue
+			}
+			for _, f := range n.Params.List {
+				for _, id := range f.Names {
+					if id.Pos() == pos {
+						return true
+					}
+				}
+			}
 		}
 	}
 	return false
