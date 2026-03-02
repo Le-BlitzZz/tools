@@ -554,6 +554,7 @@ func (tv *tokenVisitor) appendObjectModifiers(mods []semtok.Modifier, obj types.
 	case *types.Var:
 		switch obj.Kind() {
 		case types.PackageVar:
+			mods = append(mods, semtok.ModStatic)
 			return semtok.TokVariable, mods
 		case types.ParamVar:
 			return semtok.TokParameter, mods
@@ -563,7 +564,6 @@ func (tv *tokenVisitor) appendObjectModifiers(mods []semtok.Modifier, obj types.
 			return semtok.TokProperty, mods
 		case types.ResultVar:
 		}
-		mods = append(mods, semtok.ModNonStatic)
 		return semtok.TokVariable, mods
 
 	case *types.Label:

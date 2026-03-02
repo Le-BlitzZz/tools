@@ -84,7 +84,8 @@ const (
 	ModDefaultLibrary Modifier = "defaultLibrary" // for predeclared symbols
 	ModDefinition     Modifier = "definition"     // for the declaring identifier of a symbol
 	ModReadonly       Modifier = "readonly"       // for constants (TokVariable)
-	ModNonStatic      Modifier = "nonStatic"         // for non-package-level variables
+	ModStatic         Modifier = "static"         // for package-level variables
+	ModNonStatic      Modifier = "nonStatic"      // for non-package-level variables
 	// The section below defines the rest of the modifiers in standard modifiers
 	// that gopls does not use.
 	//
@@ -123,6 +124,7 @@ var Modifiers = []Modifier{
 	ModDefinition,
 	ModReadonly,
 	ModDefaultLibrary,
+	ModStatic,
 	ModNonStatic,
 	// Additional custom modifiers.
 	ModArray,
